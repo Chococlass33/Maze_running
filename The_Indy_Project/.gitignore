@@ -4,3 +4,7 @@
 # Roblox Studio lock files
 /*.rbxlx.lock
 /*.rbxl.lock
+
+# Timekeeping Files
+/TimeKeeping.xlsx
+/~$TimeKeeping.xlsx
