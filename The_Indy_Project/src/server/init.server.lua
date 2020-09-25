@@ -26,6 +26,14 @@ local newThread = coroutine.create(function()
     local test8 = my_functions:transposeright(test7);
     print("print3")
     my_functions:printmaze(test8)
+    local squareshapes = {	
+        {{true,true,true},{true,true,true},{true,true,true}}, -- 3 size square
+        {{true,true},{true,true}}, -- 2 size square
+        {{true}}, -- 1 size square
+    };
+    local test9 = my_functions:generate(10,10,squareshapes)
+    print("print4")
+    my_functions:printmaze(test9)
 end)
 
 coroutine.resume(newThread)

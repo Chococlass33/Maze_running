@@ -4,7 +4,7 @@
 
 
 local mazefunction = {};
-local shapes = {	
+local localshapes = {	
 	{{true,true,true},{false,true,false}},--tshape
 	{{true,true,true},{false,false,true}},--lshape
 	{{false,true,true},{true,true,false}},--zpiece
@@ -78,7 +78,10 @@ function mazefunction:fliptable(array)
 	return newtable;
 end
 
-local shapepermutation = function()
+local shapepermutator = function(shapes)
+	if shapes == nil then
+		shapes = localshapes
+	end
 	local permutation = {};
 	for i = 1, #shapes do
 		local templist = table.create(8);
@@ -94,8 +97,6 @@ local shapepermutation = function()
 	end
 	return permutation;
 end
-
-shapepermutation = shapepermutation()
 
 
 function mazefunction:tabledrop(array,shape,location, number)
@@ -140,7 +141,7 @@ function mazefunction:tabledrop(array,shape,location, number)
 	return returntable;
 end
 
-function mazefunction:bruteheuristic(array,shape,deepesthole,number)
+function mazefunction:bruteheuristic(array,shape,deepesthole,number, shapepermutation)
 	local currenttable = nil;
 	local besttablescore = 0;
 	local currentshape = shapepermutation[shape];
@@ -209,9 +210,14 @@ function mazefunction:getdeepest(array, deepest, ignorelength)
 	return -1, -1, false
 end
 
-function mazefunction:generate(sizex,sizey)
+function mazefunction:generate(sizex,sizey, shapes)
+	if shapes == nil then
+		shapes = localshapes
+	end
+
+	local shapepermutation = shapepermutator(shapes)
+
 	local array = table.create(sizex);
-	local piecesize = #shapes;
 
 	--Generate
 	for i = 1, sizex do
@@ -230,20 +236,19 @@ function mazefunction:generate(sizex,sizey)
 		wait();
 		local deepestholex = 1;
 		local deepestholey = 1;
-		local founddeepest = false;
-		deepestholex, deepestholey, founddeepest = mazefunction:getdeepest(array,deepest,ignorelength);
+		deepestholex, deepestholey = mazefunction:getdeepest(array,deepest,ignorelength);
 		-- print("Deep hole at")
 		-- print(deepestholex)
 		-- print(deepestholey)
 		
-		local localshapes = shapes;
-		local x = #localshapes;
+		local tempshapes = shapes;
+		local x = #tempshapes;
 		for i = 1, x do
-			local randint = math.random(#localshapes)
-			local randompiece = localshapes[randint]
-			local temptable = mazefunction:bruteheuristic(array,randompiece,deepestholey,piecevalue);
+			local randint = math.random(#tempshapes)
+			local randompiece = tempshapes[randint]
+			local temptable = mazefunction:bruteheuristic(array,randompiece,deepestholey,piecevalue,shapepermutation);
 			if temptable ~= nil then
-				array = temptable; 
+				array = temptable;
 				piecevalue = piecevalue + 1;
 				deepest = deepestholex;
 				break;
@@ -259,7 +264,7 @@ function mazefunction:generate(sizex,sizey)
 					stillworking = false;
 				end
 			else
-				table.remove(localshapes,randint)
+				table.remove(tempshapes,randint)
 			end
 		end
 	end
