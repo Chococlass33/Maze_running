@@ -11,7 +11,7 @@ local shapes = {
 };
 
 function mazefunction:deepCopy(original)
-	local copy = {}
+	local copy = {} 
 	for k, v in pairs(original) do
 		if type(v) == "table" then
 			v = mazefunction:deepCopy(v)
@@ -22,8 +22,12 @@ function mazefunction:deepCopy(original)
 end
 
 function mazefunction:mirror(list)
-	
-	
+	local newarray = table.create((#list * 2-1))
+	for i = 1, #list do
+		newarray[i] = list[i]
+		newarray[#list*2-1 - i + 1] = list[i]
+	end
+	return newarray
 end
 
 function mazefunction:printmaze(list)
