@@ -69,6 +69,7 @@ function mazefunction:fillgaps(list)
 	return newarray;
 end
 
+--Get the size of a shape
 function mazefunction:getshapesize(shape)
 	local size = 0;
 	for i = 1, #shape do
@@ -84,9 +85,24 @@ end
 --Takes an table representing a wall maze, prints the piece values
 function mazefunction:printmaze(list)
 	for i = #list, 1, -1 do
-		local text = "";
+		local text = string.format("%03i", i)..":";
 		for j = 1, #list[i] do
 			text = text .. string.format("%03i", list[i][j][2])..",";
+		end
+		print(text);
+	end
+end
+
+--Takes an table representing a floorplan, prints floor reprentation
+function mazefunction:printfullmaze(list)
+	for i = #list, 1, -1 do
+		local text = string.format("%03i", i)..":";
+		for j = 1, #list[i] do
+			if list[i][j][1] == 0 then
+				text = text .. "___,";
+			else
+				text = text .. string.format("%03i", list[i][j][1])..",";
+			end
 		end
 		print(text);
 	end
@@ -286,6 +302,7 @@ function mazefunction:getdeepest(array, deepest, ignorelength)
 	return -1, -1, false;
 end
 
+-- Generates a wallmaze
 function mazefunction:generate(sizex,sizey, shapes)
 	if shapes == nil then
 		shapes = localshapes;
@@ -327,9 +344,10 @@ function mazefunction:generate(sizex,sizey, shapes)
 				array = temptable;
 				piecevalue = piecevalue + 1;
 				deepest = deepestholex;
+				ignorelength = nil;
 				break;
 			elseif i == x then
-				if deepestholey  > 0 then
+				if deepestholey > 0 then
 					ignorelength = deepestholey;
 				else
 					deepest = deepest + 1;
@@ -347,19 +365,163 @@ function mazefunction:generate(sizex,sizey, shapes)
 	return array;
 end
 
+--Function adds a buffer of 0 spaces to a wallmaze
+function mazefunction:addbuffer(wallarray)
+	local x = #wallarray;
+	local y = #wallarray[1];
+	local array = table.create(x+2);
+	for i = 1, x+2 do
+		array[i] = table.create(y+2);
+		for j = 1, y+2 do
+			array[i][j] = {false,0,0};
+		end
+	end
 
+	for i = 1, x do
+		for j = 1, y do
+			array[i+1][j+1] = wallarray[i][j];
+		end
+	end
+	return array;
+end
 
+--Function generates a floorplan from a wallmaze
+function mazefunction:generatefloor(wallunbuffered)
+	--Added a buffer to the wallmaze
+	local wallarray = mazefunction:addbuffer(wallunbuffered)
 
-
-function mazefunction:generatefloor(wallarray)
-	local floorarrayx = #wallarray + 2;
-	local floorarrayy = #wallarray[1] + 2;
+	--Generate Floorplan
+	local floorarrayx = #wallarray *3;
+	local floorarrayy = #wallarray[1] * 3;
 	local array = table.create(floorarrayx);
+
+	--Fill floorplan with default
 	for i = 1, floorarrayx do
 		array[i] = table.create(floorarrayy);
-
-		
+		for j = 1, floorarrayy do
+			array[i][j] = {0,0} -- floor(0)/pillar(1)/wall(2)/block(3)/void(4)/indestructablepillar(5)/indestrucablewall(6), piecevalue
+		end
 	end
+
+	--Fill floorplan with pillars
+	for i = 1, #wallarray do
+		for j = 1, #wallarray[i] do
+			array[i*3-1][j*3-1] = {1, wallarray[i][j][2]};
+			if wallarray[i][j][2] > 0 then
+				for k = -2, 2 do
+					for l = -2, 2 do
+						array[i*3-1+k][j*3-1+l][2] = wallarray[i][j][2];
+					end
+				end
+			end
+		end
+	end
+
+	--Attach walls to pillars
+	for i = 1, #wallarray do
+		for j = 1, #wallarray[i] do
+			-- Flag, counts up to find blocks
+			local flag = 0;
+			-- Check subesquent pillars and draw a wall if not already a block
+			if i < #wallarray then
+				if array[i*3-1][j*3-1][2] == array[i*3+2][j*3-1][2] then
+					if array[i*3][j*3-1][1] ~= 3 then
+						array[i*3][j*3-1] = {2, wallarray[i][j][2]};
+						array[i*3+1][j*3-1] = {2, wallarray[i][j][2]};
+					end
+					flag = flag + 1
+				end
+			end
+			if j < #wallarray[i] then
+				if array[i*3-1][j*3-1][2] == array[i*3-1][j*3+2][2] then
+					if array[i*3-1][j*3][1] ~= 3 then
+						array[i*3-1][j*3] = {2, wallarray[i][j][2]};
+						array[i*3-1][j*3+1] = {2, wallarray[i][j][2]};
+					end
+					flag = flag + 1;
+				end
+			end
+
+			-- Go check if it's a block
+			if i < #wallarray and j < #wallarray[i] then
+				if wallarray[i][j][2] ~= 0 then
+					if array[i*3-1][j*3-1][2] == array[i*3+2][j*3+2][2] and flag == 2 then
+						for k = 0, 3 do
+							for l = 0, 3 do
+								array[i*3-1+k][j*3-1+l] = {3, wallarray[i][j][2]};
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+
+	-- Check for 0 blocks for edge wall finding
+	for i = 1, floorarrayx do
+		for j = 1, floorarrayy do
+			if array[i][j][2] == 0 then
+				if array[i][j][1] == 1 then
+					array[i][j] = {5,0};
+				elseif array[i][j][1] == 2 then
+					array[i][j] = {6,0};
+				else
+					array[i][j] = {4,0}
+				end
+			end
+		end
+	end
+
+	-- Set all floor adjacent blocks to owned
+	for i = 1, floorarrayx do
+		for j = 1, floorarrayy do
+			if array[i][j][1] == 0 and array[i][j][2] > 0 then
+				for k = -1, 1 do
+					for l = -1, 1 do
+						if i+k > 0 and i+k <= floorarrayx and j+l > 0 and j+l <=floorarrayy then
+							array[i+k][j+l][2] = array[i][j][2]
+						end
+					end
+				end
+			end
+		end
+	end
+
+	-- Set all non floor adjacent 0s to void spaces
+	for i = 1, floorarrayx do
+		for j = 1, floorarrayy do
+			if array[i][j][2] == 0 then
+				array[i][j] = {4,0}
+			end
+		end
+	end
+
+	-- Check unbreakable walls if it's surrounded by any void, if not set it back to normal
+	for i = 1, floorarrayx do
+		for j = 1, floorarrayy do
+			if array[i][j][1] == 5 or array[i][j][1] == 6 then
+				local flag = true;
+				for k = -1,1,2 do
+					for l = -1,1,2 do
+						if i+k > 0 and i+k <= floorarrayx and j+l > 0 and j+l <= floorarrayy then
+							if array[i+k][j+l][1] == 4 then
+								flag = false;
+							end
+						end
+					end
+				end
+				if flag then
+					if array[i][j][1] == 5 then
+						array[i][j][1] = 1;
+					else
+						array[i][j][1] = 2;
+					end
+				end
+			end
+		end
+	end
+
+	return array;
 end
 
 return mazefunction;
