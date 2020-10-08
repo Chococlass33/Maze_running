@@ -1,9 +1,8 @@
 -- Inspired by Shaun LeBron's Pacman Maze Generator, Tetris Algorithm https://github.com/shaunlebron/pacman-mazegen
 -- Create a grid, attempt to fill grid with tetris shapes defined in shapes
 
-
-
 local mazefunction = {};
+
 
 --Default Shapes to use if none are specified
 --Shapes are a list of tables, each representing a shape. 
@@ -334,7 +333,10 @@ function mazefunction:generate(sizex,sizey, shapes)
 		-- print(deepestholex)
 		-- print(deepestholey)
 		
-		local tempshapes = shapes;
+		local tempshapes = {};
+		for i = 1, #shapes do
+			tempshapes[i] = shapes[i]
+		end
 		local x = #tempshapes;
 		for i = 1, x do
 			local randint = math.random(#tempshapes)
