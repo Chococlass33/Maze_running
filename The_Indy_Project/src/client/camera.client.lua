@@ -21,7 +21,7 @@ local function onRenderStep()
 		local cameraPosition = playerPosition + CAMERA_OFFSET
 		
 		-- make the camera follow the player
-		camera.CoordinateFrame = CFrame.new(cameraPosition, playerPosition)
+		camera.CFrame = CFrame.new(cameraPosition, playerPosition)
 	end
 end
  

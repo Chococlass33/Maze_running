@@ -1,10 +1,23 @@
 -- Contains an object representing a 3d map.
+local serverstorage = game:GetService("ServerStorage")
+local Obstacle = require(serverstorage.Obstacle)
+local Sensor = require(serverstorage.Sensor)
+local Floor = require(serverstorage.Floor)
 
 local floorgenerator = {};
 floorgenerator.__index = floorgenerator;
 
+local function addxy(obj,x,y)
+    local xinstance = Instance.new("NumberValue",obj)
+    xinstance.Value = x;
+    xinstance.Name = "x";
+    local yinstance = Instance.new("NumberValue",obj)
+    yinstance.Value = y;
+    yinstance.Name = "y";
 
-function floorgenerator:generate(startx, starty, startz, pillarobj, wallobj, blockobj, floorobj, sensorobj, floorplan, squaresize)
+end
+
+function floorgenerator.new(startx, starty, startz, pillarobj, wallobj, blockobj, floorobj, sensorobj, floorplan, squaresize)
 
     local map = {};
     setmetatable(map,floorgenerator);
@@ -32,7 +45,7 @@ function floorgenerator:generate(startx, starty, startz, pillarobj, wallobj, blo
     for i = 1, #floorplan do
         map.obstacles[i] = table.create(#floorplan[i]);
         for j = 1, #floorplan[i] do
-            map.obstacles[i][j] = 0;
+            map.obstacles[i][j] = nil;
         end
     end
     
@@ -43,7 +56,7 @@ function floorgenerator:generate(startx, starty, startz, pillarobj, wallobj, blo
     for i = 1, #floorplan do
         map.floors[i] = table.create(#floorplan[i]);
         for j = 1, #floorplan[i] do
-            map.floors[i][j] = 0;
+            map.floors[i][j] = nil;
         end
     end
 
@@ -54,7 +67,7 @@ function floorgenerator:generate(startx, starty, startz, pillarobj, wallobj, blo
     for i = 1, #floorplan do
         map.sensors[i] = table.create(#floorplan[i]);
         for j = 1, #floorplan[i] do
-            map.sensors[i][j] = 0;
+            map.sensors[i][j] = nil;
         end
     end
 
@@ -65,7 +78,7 @@ function floorgenerator:generate(startx, starty, startz, pillarobj, wallobj, blo
     for i = 1, #floorplan do
         map.pickups[i] = table.create(#floorplan[i]);
         for j = 1, #floorplan[i] do
-            map.pickups[i][j] = 0;
+            map.pickups[i][j] = nil;
         end
     end
 
@@ -75,10 +88,12 @@ function floorgenerator:generate(startx, starty, startz, pillarobj, wallobj, blo
         for j = 1, #floorplan[i] do
             if floorplan[i][j][1] ~= 4 then
                 local temp = floorobj:clone();
+                addxy(temp,i,j);
+                local floor = Floor.new(temp);
                 temp.Parent = workspace;
                 local vector = Vector3.new(startx + i * squaresize,starty,startz + j * squaresize);
                 temp.Position = vector;
-                map.floors[i][j] = temp;
+                map.floors[i][j] = floor;
             end
         end
     end
@@ -89,28 +104,32 @@ function floorgenerator:generate(startx, starty, startz, pillarobj, wallobj, blo
         for j = 2, #floorplan[i],3 do
             if floorplan[i][j][1] == 1 or floorplan[i][j][1] == 5 then
                 local temp = pillarobj:clone();
+                addxy(temp,i,j);
+                local obstacle = Obstacle.new(temp, false);
                 temp.Parent = workspace;
                 local vector = Vector3.new(startx + i * squaresize,starty + temp.Size.Y/2,startz + j * squaresize);
                 temp.Position = vector;
 
-                map.obstacles[i][j] = temp;
+                map.obstacles[i][j] = obstacle;
             end
         end
     end
 
     -- Generate blocks
 
-    for i = 1, #floorplan,3 do
-        for j = 1, #floorplan[i],3 do
+    for i = 3, #floorplan,3 do
+        for j = 3, #floorplan[i],3 do
             if floorplan[i][j][1] == 3 then
                 local temp = blockobj:clone();
+                local obstacle = Obstacle.new(temp, false);
                 temp.Parent = workspace;
-                local vector = Vector3.new(startx + i * squaresize - squaresize * 0.5,starty+ temp.Size.Y/2,startz + j * squaresize - squaresize * 0.5);
+                addxy(temp,i,j);
+                local vector = Vector3.new(startx + i * squaresize + squaresize * 0.5,starty+ temp.Size.Y/2,startz + j * squaresize + squaresize * 0.5);
                 temp.Position = vector;
 
-                for k = 0, 2 do
-                    for l = 0, 2 do
-                        map.obstacles[i+k][j+l] = temp;
+                for k = -1, 2 do
+                    for l = -1, 2 do
+                        map.obstacles[i+k][j+l] = obstacle;
                     end
                 end
 
@@ -120,16 +139,18 @@ function floorgenerator:generate(startx, starty, startz, pillarobj, wallobj, blo
 
     -- Generate vertical walls
 
-    for i = 1, #floorplan,3 do
+    for i = 3, #floorplan,3 do
         for j = 2, #floorplan[i],3 do
             if floorplan[i][j][1] == 2 or floorplan[i][j][1] == 6 then
                 local temp = wallobj:clone();
+                local obstacle = Obstacle.new(temp, floorplan[i][j][1] == 2);
                 temp.Parent = workspace;
-                local vector = Vector3.new(startx + i * squaresize - squaresize * 0.5, starty + temp.Size.Y/2, startz + j * squaresize);
+                addxy(temp,i,j);
+                local vector = Vector3.new(startx + i * squaresize + squaresize * 0.5, starty + temp.Size.Y/2, startz + j * squaresize);
                 temp.Position = vector;
                 
-                map.obstacles[i][j] = temp;
-                map.obstacles[i+1][j] = temp;
+                map.obstacles[i][j] = obstacle;
+                map.obstacles[i+1][j] = obstacle;
             end
         end
     end
@@ -137,35 +158,42 @@ function floorgenerator:generate(startx, starty, startz, pillarobj, wallobj, blo
     -- Generate horizontal walls
 
     for i = 2, #floorplan,3 do
-        for j = 1, #floorplan[i],3 do
+        for j = 3, #floorplan[i],3 do
             if floorplan[i][j][1] == 2 or floorplan[i][j][1] == 6 then
                 local temp = wallobj:clone();
+                local obstacle = Obstacle.new(temp, floorplan[i][j][1] == 2);
                 temp.Parent = workspace;
-                local vector = Vector3.new(startx + i * squaresize, starty+ temp.Size.Y/2, startz + j * squaresize - squaresize * 0.5);
+                addxy(temp,i,j);
+                local vector = Vector3.new(startx + i * squaresize, starty+ temp.Size.Y/2, startz + j * squaresize + squaresize * 0.5);
                 temp.Rotation = Vector3.new(0,90,0);
                 temp.Position = vector;
                 
-                map.obstacles[i][j] = temp;
-                map.obstacles[i][j+1] = temp;
+                map.obstacles[i][j] = obstacle;
+                map.obstacles[i][j+1] = obstacle;
             end
         end
     end
 
-    -- Generate Intersections, Connect to corresponding wall
+    -- Generate Intersections, Connect to corresponding walls
 
-    for i = 3, #floorplan,3 do
-        for j = 3, #floorplan[i],3 do
+    for i = 3, #floorplan-2, 3 do
+        for j = 3, #floorplan[i]-2, 3 do
             if floorplan[i][j][1] == 0 then
                 local temp = sensorobj:clone();
+                local sensor = Sensor.new(map.obstacles[i+2][j],map.obstacles[i][j+2],map.obstacles[i-1][j],map.obstacles[i][j-1],temp);
                 temp.Parent = workspace;
+                addxy(temp,i,j);
                 local vector = Vector3.new(startx + i * squaresize + squaresize * 0.5,starty+ temp.Size.Y/2,startz + j * squaresize + squaresize * 0.5);
                 temp.Position = vector;
-                map.sensors[i][j] = sensorobj;
+                map.sensors[i][j] = sensor;
+
             end
         end
     end
 
     return map;
 end
+
+
 
 return floorgenerator;

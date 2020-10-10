@@ -63,5 +63,5 @@ local floor = replicatedstorage.floor;
 local pillar = replicatedstorage.pillar;
 local wall = replicatedstorage.wall;
 local sensor = replicatedstorage.sensor;
-workspace.Baseplate:Destroy();
-local x = floorgenerator:generate(0,0,0,pillar,wall,block,floor,sensor,test14);
+workspace.Baseplate:Destroy(); 
+local x = floorgenerator.new(0,0,0,pillar,wall,block,floor,sensor,test14); 
