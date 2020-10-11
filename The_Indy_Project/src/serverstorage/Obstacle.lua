@@ -2,9 +2,8 @@ local Obstacle = {};
 Obstacle.__index = Obstacle;
 
 function Obstacle.new(object, breaks)
-    local obstacle = {};
+    local obstacle = setmetatable({},Obstacle);
     obstacle.object = object;
-    setmetatable(obstacle,Obstacle);
     obstacle.breaks = breaks;
     return obstacle;
 end

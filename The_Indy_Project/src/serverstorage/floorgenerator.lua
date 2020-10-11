@@ -3,6 +3,7 @@ local serverstorage = game:GetService("ServerStorage")
 local Obstacle = require(serverstorage.Obstacle)
 local Sensor = require(serverstorage.Sensor)
 local Floor = require(serverstorage.Floor)
+local replicatedStorage = game:GetService("ReplicatedStorage");
 
 local floorgenerator = {};
 floorgenerator.__index = floorgenerator;
@@ -19,8 +20,8 @@ end
 
 function floorgenerator.new(startx, starty, startz, pillarobj, wallobj, blockobj, floorobj, sensorobj, floorplan, squaresize)
 
-    local map = {};
-    setmetatable(map,floorgenerator);
+    local map = setmetatable({},floorgenerator);
+    
 
     map.startx = startx;
     map.starty = starty;
@@ -31,6 +32,7 @@ function floorgenerator.new(startx, starty, startz, pillarobj, wallobj, blockobj
     map.floorobj = floorobj;
     map.sensorobj = sensorobj;
     map.floorplan = floorplan;
+
 
     if squaresize == nil then
         squaresize = 8;
@@ -45,7 +47,7 @@ function floorgenerator.new(startx, starty, startz, pillarobj, wallobj, blockobj
     for i = 1, #floorplan do
         map.obstacles[i] = table.create(#floorplan[i]);
         for j = 1, #floorplan[i] do
-            map.obstacles[i][j] = nil;
+            map.obstacles[i][j] = 0;
         end
     end
     
@@ -56,7 +58,7 @@ function floorgenerator.new(startx, starty, startz, pillarobj, wallobj, blockobj
     for i = 1, #floorplan do
         map.floors[i] = table.create(#floorplan[i]);
         for j = 1, #floorplan[i] do
-            map.floors[i][j] = nil;
+            map.floors[i][j] = 0;
         end
     end
 
@@ -67,7 +69,7 @@ function floorgenerator.new(startx, starty, startz, pillarobj, wallobj, blockobj
     for i = 1, #floorplan do
         map.sensors[i] = table.create(#floorplan[i]);
         for j = 1, #floorplan[i] do
-            map.sensors[i][j] = nil;
+            map.sensors[i][j] = 0;
         end
     end
 
@@ -78,7 +80,7 @@ function floorgenerator.new(startx, starty, startz, pillarobj, wallobj, blockobj
     for i = 1, #floorplan do
         map.pickups[i] = table.create(#floorplan[i]);
         for j = 1, #floorplan[i] do
-            map.pickups[i][j] = nil;
+            map.pickups[i][j] = 0;
         end
     end
 
@@ -186,10 +188,26 @@ function floorgenerator.new(startx, starty, startz, pillarobj, wallobj, blockobj
                 local vector = Vector3.new(startx + i * squaresize + squaresize * 0.5,starty+ temp.Size.Y/2,startz + j * squaresize + squaresize * 0.5);
                 temp.Position = vector;
                 map.sensors[i][j] = sensor;
-
+                local function printdirections(directions)
+                    print(directions);
+                end
+                sensor:bind(printdirections)
+                print(sensor:givedirection());
             end
         end
     end
+
+    map.sensorremote = Instance.new("RemoteFunction");
+    map.sensorremote.Name = "GetSensors"
+    
+    function  map.givesensors()
+        return map.sensors;
+    end
+
+    map.sensorremote.OnServerInvoke= map.givesensors;
+
+    map.sensorremote.Parent = replicatedStorage;
+
 
     return map;
 end

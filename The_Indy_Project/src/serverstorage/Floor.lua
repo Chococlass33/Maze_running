@@ -2,9 +2,8 @@ local Floor = {};
 Floor.__index = Floor;
 
 function Floor.new(object)
-    local floor = {};
+    local floor = setmetatable({},Floor);
     floor.object = object;
-    setmetatable(floor,Floor);
     return floor;
 end
 
