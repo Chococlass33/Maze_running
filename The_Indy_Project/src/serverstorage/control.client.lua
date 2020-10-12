@@ -11,7 +11,7 @@ local movementFunctions = {}
 local currentDirection = 1;
 local wantedDirection = 1;
 local lasthitsensor = {0,0};
-local sensors = getsensor:InvokeServer();
+local sensors = workspace:WaitForChild("sensorfolder"):GetChildren();
 
 local directionTable = {Vector3.new(0,0,-1), Vector3.new(1,0,0), Vector3.new(0,0,1), Vector3.new(-1,0,0)}
 
@@ -56,7 +56,7 @@ function movementFunctions:changedirection(north, east, south, west)
         end
 
         if tally >= 2 then
-            for i = 1, #table do
+            for i =#table, 1, -1 do
                 if table[i] == true and i ~= reversedirection then
                     direction = i;
                 end
@@ -99,21 +99,15 @@ function movementFunctions:changewantedDirection(direction,inputstate)
         wantedDirection = direction;
     end
 end
-local tallysensor = 0
 for i = 1, #sensors do
-    for j = 1, #sensors[i] do
-        if sensors[i][j] ~= 0 then
-            tallysensor = tallysensor + 1;
-            sensors[i][j].object.Touched:Connect(function(obj)
-                if obj:IsDescendantOf(player.Character) then
-                    if lasthitsensor ~= sensors[i][j] then
-                        movementFunctions:changedirection(sensors[i][j].object.north.Value,sensors[i][j].object.east.Value,sensors[i][j].object.south.Value,sensors[i][j].object.west.Value)
-                        lasthitsensor = sensors[i][j]
-                    end
-                end
-            end);
+    sensors[i].Touched:Connect(function(obj)
+        if obj:IsDescendantOf(player.Character) and obj.Name == "HumanoidRootPart"then
+            if lasthitsensor ~= sensors[i] then
+                movementFunctions:changedirection(sensors[i].north.Value,sensors[i].east.Value,sensors[i].south.Value,sensors[i].west.Value)
+                lasthitsensor = sensors[i]
+            end
         end
-    end
+    end);
 end
 
 function movementFunctions:bindtosensors()
@@ -131,6 +125,5 @@ local function start()
     end)
 end
 
-
-ContextActionService:BindAction("Start",function(actionName, inputState, inputObject) start() end,true,Enum.KeyCode.T)
+start();
 

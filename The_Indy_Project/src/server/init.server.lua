@@ -19,7 +19,7 @@ local test5 = my_functions:fliptable(test1);
 -- my_functions:printNestedList(test4,0)
 -- my_functions:printNestedList(test5,0)
 
-local test6 = (my_functions:generate(10,20))
+local test6 = (my_functions:generate(5,10))
 -- my_functions:printNestedList(test6,0)
 print("print1")
 my_functions:printmaze(test6)
@@ -65,5 +65,5 @@ local wall = replicatedstorage.wall;
 local sensor = replicatedstorage.sensor;
 workspace.Baseplate:Destroy();
 
-local x = floorgenerator.new(0,0,0,pillar,wall,block,floor,sensor,test14); 
+local x = floorgenerator.new(0,0,0,pillar,wall,block,floor,sensor,test13, workspace.door); 
 

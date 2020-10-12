@@ -8,7 +8,7 @@ local camera = workspace.CurrentCamera
 local player = game.Players.LocalPlayer
  
 -- Constant variable used to set the camera’s offset from the player
-local CAMERA_OFFSET = Vector3.new(-1,100,0)
+local CAMERA_OFFSET = Vector3.new(-1,200,0)
 
 -- Enables the camera to do what this script says
 camera.CameraType = Enum.CameraType.Scriptable 
@@ -17,11 +17,13 @@ camera.CameraType = Enum.CameraType.Scriptable
 local function onRenderStep()
 	-- Check the player's character has spawned
 	if player.Character then
-		local playerPosition = player.Character.HumanoidRootPart.Position
-		local cameraPosition = playerPosition + CAMERA_OFFSET
-		
-		-- make the camera follow the player
-		camera.CFrame = CFrame.new(cameraPosition, playerPosition)
+		if player.Character:FindFirstChild("HumanoidRootPart") then
+			local playerPosition = player.Character.HumanoidRootPart.Position
+			local cameraPosition = playerPosition + CAMERA_OFFSET
+			
+			-- make the camera follow the player
+			camera.CFrame = CFrame.new(cameraPosition, playerPosition)
+		end
 	end
 end
  

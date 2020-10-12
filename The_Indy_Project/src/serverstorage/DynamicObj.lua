@@ -6,4 +6,3 @@ function DynamicObj.new(object)
     setmetatable(dynamicobj,DynamicObj)
     dynamicobj.object = object
 end
-

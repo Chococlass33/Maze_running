@@ -18,9 +18,19 @@ local function addxy(obj,x,y)
 
 end
 
-function floorgenerator.new(startx, starty, startz, pillarobj, wallobj, blockobj, floorobj, sensorobj, floorplan, squaresize)
+function floorgenerator.new(startx, starty, startz, pillarobj, wallobj, blockobj, floorobj, sensorobj, floorplan, door)
 
     local map = setmetatable({},floorgenerator);
+    
+    map.sensorfolder = Instance.new("Folder");
+    map.sensorfolder.Name = "sensorfolder";
+    map.sensorfolder.Parent = workspace;
+    map.floorfolder = Instance.new("Folder");
+    map.floorfolder.Name = "floorfolder";
+    map.floorfolder.Parent = workspace;
+    map.obstaclefolder = Instance.new("Folder");
+    map.obstaclefolder.Name = "obstaclefolder";
+    map.obstaclefolder.Parent = workspace;
     
 
     map.startx = startx;
@@ -32,13 +42,10 @@ function floorgenerator.new(startx, starty, startz, pillarobj, wallobj, blockobj
     map.floorobj = floorobj;
     map.sensorobj = sensorobj;
     map.floorplan = floorplan;
+    map.players = {};
 
+    local squaresize = 8
 
-    if squaresize == nil then
-        squaresize = 8;
-    end
-
-    map.squaresize = squaresize;
 
     -- Lists of objects to create
 
@@ -92,7 +99,7 @@ function floorgenerator.new(startx, starty, startz, pillarobj, wallobj, blockobj
                 local temp = floorobj:clone();
                 addxy(temp,i,j);
                 local floor = Floor.new(temp);
-                temp.Parent = workspace;
+                temp.Parent = map.floorfolder;
                 local vector = Vector3.new(startx + i * squaresize,starty,startz + j * squaresize);
                 temp.Position = vector;
                 map.floors[i][j] = floor;
@@ -108,7 +115,7 @@ function floorgenerator.new(startx, starty, startz, pillarobj, wallobj, blockobj
                 local temp = pillarobj:clone();
                 addxy(temp,i,j);
                 local obstacle = Obstacle.new(temp, false);
-                temp.Parent = workspace;
+                temp.Parent = map.obstaclefolder;
                 local vector = Vector3.new(startx + i * squaresize,starty + temp.Size.Y/2,startz + j * squaresize);
                 temp.Position = vector;
 
@@ -124,7 +131,7 @@ function floorgenerator.new(startx, starty, startz, pillarobj, wallobj, blockobj
             if floorplan[i][j][1] == 3 then
                 local temp = blockobj:clone();
                 local obstacle = Obstacle.new(temp, false);
-                temp.Parent = workspace;
+                temp.Parent = map.obstaclefolder;
                 addxy(temp,i,j);
                 local vector = Vector3.new(startx + i * squaresize + squaresize * 0.5,starty+ temp.Size.Y/2,startz + j * squaresize + squaresize * 0.5);
                 temp.Position = vector;
@@ -146,7 +153,7 @@ function floorgenerator.new(startx, starty, startz, pillarobj, wallobj, blockobj
             if floorplan[i][j][1] == 2 or floorplan[i][j][1] == 6 then
                 local temp = wallobj:clone();
                 local obstacle = Obstacle.new(temp, floorplan[i][j][1] == 2);
-                temp.Parent = workspace;
+                temp.Parent = map.obstaclefolder;
                 addxy(temp,i,j);
                 local vector = Vector3.new(startx + i * squaresize + squaresize * 0.5, starty + temp.Size.Y/2, startz + j * squaresize);
                 temp.Position = vector;
@@ -164,7 +171,7 @@ function floorgenerator.new(startx, starty, startz, pillarobj, wallobj, blockobj
             if floorplan[i][j][1] == 2 or floorplan[i][j][1] == 6 then
                 local temp = wallobj:clone();
                 local obstacle = Obstacle.new(temp, floorplan[i][j][1] == 2);
-                temp.Parent = workspace;
+                temp.Parent = map.obstaclefolder;
                 addxy(temp,i,j);
                 local vector = Vector3.new(startx + i * squaresize, starty+ temp.Size.Y/2, startz + j * squaresize + squaresize * 0.5);
                 temp.Rotation = Vector3.new(0,90,0);
@@ -183,7 +190,7 @@ function floorgenerator.new(startx, starty, startz, pillarobj, wallobj, blockobj
             if floorplan[i][j][1] == 0 then
                 local temp = sensorobj:clone();
                 local sensor = Sensor.new(map.obstacles[i+2][j],map.obstacles[i][j+2],map.obstacles[i-1][j],map.obstacles[i][j-1],temp);
-                temp.Parent = workspace;
+                temp.Parent = map.sensorfolder;
                 addxy(temp,i,j);
                 local vector = Vector3.new(startx + i * squaresize + squaresize * 0.5,starty+ temp.Size.Y/2,startz + j * squaresize + squaresize * 0.5);
                 temp.Position = vector;
@@ -197,6 +204,7 @@ function floorgenerator.new(startx, starty, startz, pillarobj, wallobj, blockobj
         end
     end
 
+    -- RemoteFunction to return the list of sensors
     map.sensorremote = Instance.new("RemoteFunction");
     map.sensorremote.Name = "GetSensors"
     
@@ -208,6 +216,34 @@ function floorgenerator.new(startx, starty, startz, pillarobj, wallobj, blockobj
 
     map.sensorremote.Parent = replicatedStorage;
 
+    local function doorteleport(player)
+        local temp = {};
+        for i = 1, #map.sensors do
+            for j = 1, #map.sensors[i] do
+                if map.sensors[i][j] ~= 0 then
+                    table.insert(temp, map.sensors[i][j])
+                end
+            end
+        end
+
+        local camerascript = serverstorage.camera:Clone()
+        local controlscript = serverstorage.control:Clone()
+        camerascript.Parent = player.Character;
+        controlscript.Parent = player.Character;
+        player.Character.HumanoidRootPart.Velocity = Vector3.new(0,0,0);
+        local rand = math.random(#temp)
+        player.Character.HumanoidRootPart.CFrame = CFrame.new(temp[rand].object.Position);
+    end
+
+    door.Touched:Connect(function(obj)
+        local player = game.Players:GetPlayerFromCharacter(obj.Parent);
+        if player and not map.players[player] then
+            map.players[player] = player;
+            doorteleport(player);
+            wait(3);
+            map.players[player] = nil;
+        end
+    end)
 
     return map;
 end
